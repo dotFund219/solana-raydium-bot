@@ -3,7 +3,7 @@ from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 # from solana.keypair import Keypair
 from solana.transaction import Transaction
-from solders.instruction import Instruction
+from solders.instruction import Instruction, AccountMeta
 # from solana.system_program import SYS_PROGRAM_ID
 from solana.rpc.types import TxOpts
 from dotenv import load_dotenv
@@ -52,19 +52,23 @@ def main():
     Output_Token_Mint = Pubkey.from_string("2SiSpNowr7zUv5ZJHuzHszskQNaskWsNukhivCtuVLHo") # SPL Token
     slippage = 50 # 0.5%
 
-    byte_array_list = ['0']
-    byte_array = bytearray(int(byte) for byte in byte_array_list)
-    instruction_data = byte_array
+    amount_in = 1000000  # Amount of source token to swap (in smallest unit, e.g., lamports)
+    min_amount_out = 1  # Minimum amount of destination token to receive
+
+    data = (
+        amount_in.to_bytes(8, 'little') +  # Amount in
+        min_amount_out.to_bytes(8, 'little')  # Minimum amount out
+    )
 
     swap_instruction = Instruction(
         accounts=[
-            {"pubkey": keypair.pubkey(), "is_signer": True, "is_writable": True},
-            {"pubkey": Input_Token_Mint, "is_signer": False, "is_writable": True},
-            {"pubkey": Output_Token_Mint, "is_signer": False, "is_writable": True},
+            AccountMeta(pubkey=keypair.pubkey(), is_signer=True, is_writable= True),
+            AccountMeta(Input_Token_Mint, is_signer=False, is_writable= True),
+            AccountMeta(Output_Token_Mint, is_signer=False, is_writable= True),
             # Add other necessary accounts based on Raydium's requirements
         ],
         program_id=RAYDIUM_PROGRAM_ID,
-        data=instruction_data
+        data=data
     )
 
     # Create and send the transaction
